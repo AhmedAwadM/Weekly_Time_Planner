@@ -1,0 +1,28 @@
+# OS / editor files
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+
+# Local secrets and private configuration
+.env
+.env.*
+!.env.example
+config/supabase.local.js
+*.secret.*
+*.local.*
+
+# Personal planner data and exports must never be committed
+data/*.json
+data/**/*.json
+backups/*.json
+backups/**/*.json
+exports/*.json
+exports/**/*.json
+*.planner-data.json
+
+# Optional local tooling
+node_modules/
+dist/
+coverage/
