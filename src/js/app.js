@@ -474,12 +474,13 @@
     $('saveStatusBox').classList.toggle('status-saved',kind==='ok');
     $('localNotice').classList.toggle('warn',kind==='bad');
     $('localNoticeText').textContent=kind==='bad'?detail:'';
-    $('createDataFileBtn').hidden=!supportsFile;$('linkDataFileBtn').hidden=!supportsFile;
+    $('createDataFileBtn').hidden=!supportsFile;
     $('createDataFileBtn').disabled=storageLoadFailed||!dataReady;
-    $('unlinkDataFileBtn').hidden=!fileHandle;
-    $('replacedBackupBtn').hidden=!lsGet(REPLACED_KEY);
-    $('backupsBtn').hidden=backupCount===0&&!lsGet(REPLACED_KEY)&&!lsGet(FALLBACK_BACKUPS_KEY);
-    $('menuHint').textContent=fileHandle?'':noFileHint();
+    $('linkDataFileBtn').hidden=true;
+    $('unlinkDataFileBtn').hidden=true;
+    $('replacedBackupBtn').hidden=true;
+    $('backupsBtn').hidden=false;
+    $('menuHint').textContent='';
   }
   function scheduleFileWrite() {
     if(!fileHandle||fileState==='needs'||!dataReady)return;
@@ -1062,8 +1063,8 @@
     $('durationViewBtn').setAttribute('aria-pressed',String(mode==='duration'));
     $('timelineViewBtn').setAttribute('aria-pressed',String(mode==='timeline'));
     $('boardDescription').textContent=mode==='duration'
-      ?'كل عمود = 24 ساعة. المهام الأساسية تحجز الوقت، والمهام المتوازية في مسارات جانبية لا تدخل في المجموع.'
-      :'الأعمدة الأساسية والمتوازية بمحاذاة ساعات اليوم. أسماء المهام القصيرة تظهر كذلك في قائمة أسفل كل يوم.';
+      ?'كل يوم في بطاقة مستقلة، مع توزيع بصري واضح للمهام الأساسية والمتوازية.'
+      :'كل يوم يظهر أسفل الآخر مع محاذاة حسب الساعة لقراءة أدق لمواعيد المهام.';
     renderWeek();
   }
   function addBlockText(block,name,h,info='') {
