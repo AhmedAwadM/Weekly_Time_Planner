@@ -1,4 +1,4 @@
-# Architecture — v3.6 baseline
+# Architecture — v3.8 baseline
 
 ## Current runtime
 

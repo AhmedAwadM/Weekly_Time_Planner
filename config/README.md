@@ -1,6 +1,6 @@
 # Configuration
 
-The current v3.6 application does not require runtime configuration.
+The current v3.8 application does not require runtime configuration.
 
 `app-config.example.js` is a documented placeholder for the later Supabase phase. It is not loaded by the app yet.
 

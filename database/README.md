@@ -1,6 +1,6 @@
 # Database layer (future phase)
 
-The current v3.6 release has no cloud database or server-side backend. User data remains in browser storage and can be moved with the app's JSON export/import feature.
+The current v3.8 release has no cloud database or server-side backend. User data remains in browser storage and can be moved with the app's JSON export/import feature.
 
 The planned Supabase structure is reserved under `database/supabase/`:
 - `migrations/`: versioned SQL schema changes.

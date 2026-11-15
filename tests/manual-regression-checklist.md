@@ -35,3 +35,10 @@ The application started as a single-file v3.6 baseline. This checklist records t
 - [ ] Test tablet width.
 - [ ] Test narrow mobile width.
 - [ ] Check Arabic RTL layout, dialogs, menus, and horizontal week-table scrolling.
+
+## v3.8 layout and data menu
+- [ ] Confirm all seven days appear as vertically stacked cards in duration view.
+- [ ] Confirm all seven days remain vertically stacked when parallel tasks are visible.
+- [ ] Confirm all seven days remain vertically stacked in timeline view.
+- [ ] Confirm data menu has exactly four actions: Import, Export, Link Save File, Reset Tasks.
+- [ ] Confirm Link Save File offers choosing an existing JSON file or creating a new one.

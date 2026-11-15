@@ -474,13 +474,9 @@
     $('saveStatusBox').classList.toggle('status-saved',kind==='ok');
     $('localNotice').classList.toggle('warn',kind==='bad');
     $('localNoticeText').textContent=kind==='bad'?detail:'';
-    $('createDataFileBtn').hidden=!supportsFile;
-    $('createDataFileBtn').disabled=storageLoadFailed||!dataReady;
-    $('linkDataFileBtn').hidden=true;
-    $('unlinkDataFileBtn').hidden=true;
-    $('replacedBackupBtn').hidden=true;
-    $('backupsBtn').hidden=false;
-    $('menuHint').textContent='';
+    $('linkDataFileBtn').hidden=false;
+    $('linkDataFileBtn').disabled=storageLoadFailed||!dataReady;
+    $('linkDataFileBtn').textContent='ربط بملف الحفظ';
   }
   function scheduleFileWrite() {
     if(!fileHandle||fileState==='needs'||!dataReady)return;
@@ -663,6 +659,52 @@
       else {fileState='error';fileErr='تعذّر استعادة ربط ملف JSON: '+(e.message||'خطأ غير معروف');}
     }
     updateStorageStatus();
+  }
+  async function chooseSaveFileMode() {
+    if(!supportsFile) {
+      await openDialog('المتصفح الحالي لا يدعم ربط ملف JSON للحفظ المباشر. يمكنك استخدام «استيراد» و«تصدير» لنقل بياناتك يدويًا.','حسنًا',null,false);
+      return null;
+    }
+    return new Promise(resolve=>{
+      const previous=document.activeElement;
+      const overlay=element('div','dialog-backdrop');
+      const box=element('div','dialog-box');
+      box.setAttribute('role','dialog');box.setAttribute('aria-modal','true');
+      const heading=element('h3','','ربط ملف الحفظ');
+      heading.style.margin='0 0 8px';
+      heading.style.fontSize='18px';
+      heading.style.color='var(--ink)';
+      const note=element('p','dialog-text','اختر ملف JSON موجودًا، أو أنشئ ملفًا جديدًا. بعد الربط سيحفظ البرنامج تعديلات هذه الجلسة فيه تلقائيًا.');
+      const actions=element('div','dialog-actions');
+      const existing=makeButton('اختيار ملف موجود','btn primary',()=>finish(false));
+      const create=makeButton('إنشاء ملف جديد','btn',()=>finish(true));
+      const cancel=makeButton('إلغاء','btn',()=>finish(null));
+      actions.append(existing,create,cancel);
+      box.append(heading,note,actions);
+      overlay.append(box);
+      function finish(value) {
+        document.removeEventListener('keydown',onKey,true);
+        overlay.remove();
+        if(previous&&previous.focus)previous.focus({preventScroll:true});
+        resolve(value);
+      }
+      function onKey(event) {
+        if(event.key==='Escape'){event.preventDefault();finish(null);}
+        if(event.key==='Tab') {
+          const buttons=[existing,create,cancel],index=buttons.indexOf(document.activeElement);
+          event.preventDefault();
+          buttons[(index+(event.shiftKey?-1:1)+buttons.length)%buttons.length].focus();
+        }
+      }
+      overlay.addEventListener('click',event=>{if(event.target===overlay)finish(null);});
+      document.addEventListener('keydown',onKey,true);
+      document.body.append(overlay);
+      existing.focus();
+    });
+  }
+  async function connectSaveFile() {
+    const create=await chooseSaveFileMode();
+    if(create!==null)await linkFile(create);
   }
   async function linkFile(create) {
     if(!supportsFile||busy||!dataReady)return;busy=true;
@@ -1161,18 +1203,10 @@
     visibilityButton.hidden=!hasParallelTasks;
     visibilityButton.textContent=parallelVisible?'⇉ إخفاء الأعمدة المتوازية':'⇉ إظهار الأعمدة المتوازية';
     visibilityButton.setAttribute('aria-pressed',String(parallelVisible));
-    // Keep original v3 widths when no parallel tasks exist. Expand only the affected days.
-    if(hasParallel) {
-      week.style.gridTemplateColumns=DAYS.map((day,i)=>{
-        const width=163+lanesByDay[i].length*104;
-        return `minmax(${width}px,${width}fr)`;
-      }).join(' ');
-      week.style.minWidth='max-content';
-    } else {
-      // Restore the original seven-day layout when parallel lanes are hidden.
-      week.style.removeProperty('grid-template-columns');
-      week.style.removeProperty('min-width');
-    }
+    // Always stack the seven day cards vertically. Parallel tasks expand only
+    // the lanes inside their own day card, never the week grid itself.
+    week.style.removeProperty('grid-template-columns');
+    week.style.removeProperty('min-width');
     // Keep equal chart heights across all seven days. Expand only when there
     // are many tasks, so even 15-minute entries can display their names.
     const weekData=DAYS.map(day=>getDayData(day.id,allSegments));
@@ -1365,11 +1399,7 @@
     downloadText('weekly-time-planner-backup-v3.json',JSON.stringify(makeDataFile(),null,2));
     exportedSinceRisk=true;notify('تم تجهيز نسخة JSON للتنزيل');
   });
-  $('linkDataFileBtn').addEventListener('click',()=>linkFile(false));
-  $('createDataFileBtn').addEventListener('click',()=>linkFile(true));
-  $('unlinkDataFileBtn').addEventListener('click',unlinkFile);
-  $('replacedBackupBtn').addEventListener('click',downloadReplaced);
-  $('backupsBtn').addEventListener('click',showBackupsDialog);
+  $('linkDataFileBtn').addEventListener('click',connectSaveFile);
   $('importBtn').addEventListener('click',()=>$('importFile').click());
   $('importFile').addEventListener('change',async event=>{
     const file=event.target.files?.[0];if(!file)return;

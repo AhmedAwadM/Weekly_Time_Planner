@@ -32,18 +32,12 @@
       <div class="data-menu-wrap">
         <button class="btn header-tool-btn" id="dataMenuBtn" type="button" aria-haspopup="true" aria-expanded="false"><span class="header-tool-icon" aria-hidden="true">☰</span><span>البيانات</span></button>
         <div class="data-menu" id="dataMenu" role="menu" hidden>
-          <button class="menu-item" id="createDataFileBtn" role="menuitem" type="button">إنشاء ملف بيانات جديد</button>
-          <button class="menu-item" id="linkDataFileBtn" role="menuitem" type="button" hidden>فتح ملف بيانات موجود…</button>
-          <button class="menu-item" id="unlinkDataFileBtn" role="menuitem" type="button" hidden>فصل ملف البيانات</button>
-          <hr>
-          <button class="menu-item" id="exportBtn" role="menuitem" type="button">تصدير</button>
           <button class="menu-item" id="importBtn" role="menuitem" type="button">استيراد</button>
+          <button class="menu-item" id="exportBtn" role="menuitem" type="button">تصدير</button>
+          <button class="menu-item" id="linkDataFileBtn" role="menuitem" type="button">ربط بملف الحفظ</button>
           <input type="file" id="importFile" accept=".json,application/json" hidden>
-          <button class="menu-item" id="backupsBtn" role="menuitem" type="button">إدارة النسخ الاحتياطية</button>
-          <button class="menu-item" id="replacedBackupBtn" role="menuitem" type="button" hidden>تنزيل آخر نسخة مستبدلة</button>
           <hr>
-          <button class="menu-item danger" id="resetBtn" role="menuitem" type="button">إعادة ضبط المهام الافتراضية</button>
-          <p class="menu-hint" id="menuHint"></p>
+          <button class="menu-item danger" id="resetBtn" role="menuitem" type="button">إعادة ضبط المهام</button>
         </div>
       </div>
     </div>
@@ -174,14 +168,14 @@
         </div>
       </div>
       <div class="legend" id="legend" aria-label="دليل الألوان حسب درجة الأهمية"></div>
-      <div class="chart-scroll" tabindex="0" aria-label="عرض الأسبوع بالكامل يومًا بيوم">
+      <div class="chart-scroll" tabindex="0" aria-label="أيام الأسبوع مرتبة رأسيًا">
         <div class="week" id="weekView"></div>
       </div>
       <div class="parallel-note" id="parallelBoardNote" hidden>⇉ الأعمدة الجانبية مهام متوازية لا تُحسب من وقت اليوم. المحاذاة الزمنية الدقيقة تظهر في «حسب الساعة».</div>
     
       </section>
   </div>
-  <div class="footer">ملف HTML مستقل — بدون إنترنت أو حسابات — حفظ محلي تلقائي و10 نسخ احتياطية — يبدأ الأسبوع بالأحد — يدعم المدد والمواعيد الدقيقة والمهام المتوازية — النقل بين الأجهزة باستخدام JSON. <strong>v3.7</strong></div>
+  <div class="footer">ملف HTML مستقل — بدون إنترنت أو حسابات — حفظ محلي تلقائي و10 نسخ احتياطية — يبدأ الأسبوع بالأحد — يدعم المدد والمواعيد الدقيقة والمهام المتوازية — النقل بين الأجهزة باستخدام JSON. <strong>v3.8</strong></div>
 </main>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <button class="fab" id="fabAdd" type="button" aria-label="إضافة مهمة جديدة">＋</button>

@@ -1,6 +1,6 @@
 /* Weekly Time Planner PWA service worker.
    Bump CACHE_VERSION whenever a release changes app files. */
-const CACHE_VERSION = "weekly-time-planner-v3.6.0";
+const CACHE_VERSION = "weekly-time-planner-v3.8.0";
 const APP_SHELL = [
   "./",
   "./index.html",

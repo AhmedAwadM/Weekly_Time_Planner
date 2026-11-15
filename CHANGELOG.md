@@ -1,5 +1,14 @@
 # Changelog
 
+## v3.8 — Vertical week view and simplified data actions
+
+- Fixed the week grid so all seven day cards always stack vertically, including when parallel tasks are present.
+- Parallel task lanes remain inside their respective day card and no longer force the days into horizontal columns.
+- Simplified the data menu to exactly four main actions: Import, Export, Link Save File, and Reset Tasks.
+- Combined linking an existing JSON file and creating a new save file under one “Link Save File” action with a clear in-app choice.
+- Kept the file-link action visible on browsers without File System Access support; it explains that manual JSON import/export is the available fallback.
+- Bumped the service-worker cache version to ensure the new UI is fetched after deployment.
+
 ## v3.7 — GitHub Pages layout refresh
 
 - Simplified the data menu to focus on the most useful actions: create data file, import, export, backup management, and reset to default tasks.
