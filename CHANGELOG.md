@@ -1,7 +1,8 @@
 # Changelog
 
-## v3.10 — UI, RTL/Bidi, and cross-browser polish
+## v3.10 — Unified day box, timeline alignment, RTL/Bidi, and mobile polish
 
+- Kept untimed basic tasks inside the main unified day box (sorted by priority `0`–`5`) instead of dropping them into a separate bottom list in timeline view; when a day mixes timed and untimed basic tasks, both appear side-by-side in dedicated columns alongside parallel task lanes inside the same frame.
 - Aligned timeline view height (`720px`) across the main schedule track, background grid lines, and parallel task lanes so timed and linked parallel tasks match hour-for-hour.
 - Added a dedicated hour-label gutter in timeline view so task blocks never cover the `00:00`–`22:00` time axis markers.
 - Fixed RTL/Bidi ordering for day-budget pills (`9 س / 24`) and time-range labels (`22:00–02:00`), plus vertical Arabic parallel column headers (`direction: rtl` and taller headers to prevent premature truncation).
