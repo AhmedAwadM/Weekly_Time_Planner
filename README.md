@@ -1,6 +1,6 @@
 # مخطط وقتي | Weekly Time Planner
 
-**Baseline:** v3.9  
+**Baseline:** v3.10  
 **نوع المشروع:** Static Web App + PWA shell  
 **اللغة:** العربية (RTL)
 

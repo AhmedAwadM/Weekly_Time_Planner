@@ -1,5 +1,14 @@
 # Changelog
 
+## v3.10 — UI, RTL/Bidi, and cross-browser polish
+
+- Aligned timeline view height (`720px`) across the main schedule track, background grid lines, and parallel task lanes so timed and linked parallel tasks match hour-for-hour.
+- Added a dedicated hour-label gutter in timeline view so task blocks never cover the `00:00`–`22:00` time axis markers.
+- Fixed RTL/Bidi ordering for day-budget pills (`9 س / 24`) and time-range labels (`22:00–02:00`), plus vertical Arabic parallel column headers (`direction: rtl` and taller headers to prevent premature truncation).
+- Fixed `aria-pressed` semantics on the parallel columns toggle button (`⇉ عرض الأعمدة المتوازية`), and kept the parallel day summary and footer counts accurate even when parallel side columns are hidden.
+- Compacted day-card headers onto a single responsive row, highlighted the active task being edited in the task list, balanced the top reflection banner padding, and cleared stale form errors when inputs or days change.
+- Improved mobile and cross-browser ergonomics: auto-hide the floating `+` button when the editor form is in view, stack narrow mobile time rows cleanly, prevent iOS Safari focus-zoom (`16px` mobile inputs) and premature blob URL revocation, and add horizontal lane scrolling when multiple parallel tasks exist.
+
 ## v3.9 — Safer updates, safer sync, safer backups
 
 - Service worker is now network-first for every same-origin file (cache is only the offline fallback), and CSS/JS links carry `?v=` so a new page can never run an old cached script. `updateViaCache: "none"` lets the service worker itself update promptly.

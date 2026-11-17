@@ -1,6 +1,6 @@
 /* Weekly Time Planner PWA service worker.
    Release rule: bump VERSION here AND the ?v= query on the CSS/JS links in index.html (npm-free check: node tests/check-release.js). */
-const VERSION = "3.9.0";
+const VERSION = "3.10.0";
 const CACHE_VERSION = "weekly-time-planner-v" + VERSION;
 const APP_SHELL = [
   "./",
