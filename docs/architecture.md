@@ -1,4 +1,4 @@
-# Architecture — v3.8 baseline
+# Architecture — v3.9 baseline
 
 ## Current runtime
 
@@ -38,3 +38,10 @@ When approved, add:
 - A tested export/import fallback.
 
 Do not put privileged database credentials in client-side files.
+
+## v3.9 notes
+
+- **Service worker:** network-first for every same-origin file; the cache is only an offline fallback. CSS/JS URLs carry `?v=VERSION`, so HTML and scripts always come from the same release.
+- **Data:** IndexedDB (revision-checked commits) is the source of truth, mirrored to localStorage. An optional linked JSON file (File System Access API, desktop Chromium) is written after every change.
+- **Backups:** last 10 routine (add/edit) snapshots and last 10 protected snapshots (delete/import/reset/restore/unreadable data), trimmed separately. Reachable from the data menu.
+- **Security:** a Content-Security-Policy meta tag restricts everything to `'self'`. When Supabase is added, extend `connect-src` for the project URL only.

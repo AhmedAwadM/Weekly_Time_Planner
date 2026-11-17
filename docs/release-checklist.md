@@ -4,7 +4,8 @@ Before each release:
 
 - [ ] Export a JSON backup from the currently used app.
 - [ ] Update the version in `CHANGELOG.md`.
-- [ ] Update `CACHE_VERSION` in `service-worker.js`.
+- [ ] Update `VERSION` in `service-worker.js` and the `?v=` query on the CSS/JS links in `index.html` (same number).
+- [ ] Run `node tests/check-release.js`, `node tests/sync-test.js` and `node tests/sw-test.js`; fix anything they report.
 - [ ] Confirm `index.html` references the intended CSS and JS paths.
 - [ ] Check `manifest.webmanifest` paths and icons.
 - [ ] Run the manual regression checklist.

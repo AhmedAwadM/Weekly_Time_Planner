@@ -1,5 +1,7 @@
 # GitHub repository and Pages setup (Windows)
 
+> Branch name: the commands below use `main`. If your repository uses `Main` (capital M), use that exact spelling everywhere, including **Settings → Pages**. Prefer lowercase `main`: on Windows (case-insensitive) `main` and `Main` cannot coexist.
+
 ## A. Create the repository on GitHub
 
 1. Sign in to GitHub.

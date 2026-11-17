@@ -1,5 +1,17 @@
 # Changelog
 
+## v3.9 — Safer updates, safer sync, safer backups
+
+- Service worker is now network-first for every same-origin file (cache is only the offline fallback), and CSS/JS links carry `?v=` so a new page can never run an old cached script. `updateViaCache: "none"` lets the service worker itself update promptly.
+- Replaced the two inline base64 icons in `index.html` with the icon file (page size 56 KB → 12 KB) and added a Content-Security-Policy.
+- Linked-file sync no longer asks "which copy?" when there is no real conflict: it writes your own pending edits silently, and adopts the file silently when it was edited elsewhere and nothing here is unsaved. A real conflict (both changed) still asks.
+- The "Link Save File" dialog now also offers **Unlink** when a file is linked.
+- Backups are reachable again through a quiet "Backups" row under the four main actions. Routine add/edit snapshots (last 10) and protected snapshots before delete/import/reset/restore/unreadable data (last 10) are trimmed separately, so routine edits can no longer push a protected snapshot out.
+- The "leave this page?" warning now appears only when data is not safely stored (it no longer fires just because the linked file is waiting for permission).
+- Mobile data menu is anchored under the header instead of a fixed pixel offset.
+- Footer text updated for the hosted PWA.
+- Added dependency-free automated checks under `tests/` (release consistency, storage/sync behaviour, service worker); see `tests/README.md`.
+
 ## v3.8 — Vertical week view and simplified data actions
 
 - Fixed the week grid so all seven day cards always stack vertically, including when parallel tasks are present.

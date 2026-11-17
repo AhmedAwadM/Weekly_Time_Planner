@@ -114,7 +114,24 @@
   const STATE_KEY=KEY+'-state-v1',REPLACED_KEY=KEY+'-replaced-backup',FALLBACK_BACKUPS_KEY=KEY+'-backups-fallback';
   const LOCK_NAME=KEY+'-file-writer',STATE_LOCK=KEY+'-state-writer';
   const STATE_STORE='state',BACKUP_STORE='backups',STATE_SLOT='current';
-  const MAX_BACKUPS=10,MAX_FILE_BYTES=5*1024*1024;
+  const MAX_BACKUPS=10,MAX_PROTECTED_BACKUPS=10,MAX_FILE_BYTES=5*1024*1024;
+  const ROUTINE_REASONS=new Set(['إضافة مهمة','تعديل مهمة','تراجع عن عملية']);
+  const FILEHASH_KEY=KEY+'-file-hash';
+  const isRoutineBackup=r=>ROUTINE_REASONS.has(r&&r.reason);
+  // Routine edits and protected snapshots (delete/import/reset/restore/unreadable/external file) are trimmed
+  // separately, so routine edits can never push a protected snapshot out.
+  function backupsToDelete(records) {
+    const sorted=records.slice().sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
+    const routine=sorted.filter(isRoutineBackup),kept=sorted.filter(r=>!isRoutineBackup(r));
+    return [...routine.slice(0,Math.max(0,routine.length-MAX_BACKUPS)),...kept.slice(0,Math.max(0,kept.length-MAX_PROTECTED_BACKUPS))];
+  }
+  function trimBackups(store) {
+    const all=store.getAll();
+    all.onsuccess=()=>backupsToDelete(all.result||[]).forEach(r=>store.delete(r.id));
+  }
+  // Fingerprint of the file content this app last wrote/read: tells "file changed elsewhere" from "our own pending write".
+  function hashText(s) {let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return (h>>>0).toString(16)+':'+s.length;}
+  const rememberFileHash=text=>lsSet(FILEHASH_KEY,hashText(text));
   const lsGet=k=>{try{return localStorage.getItem(k);}catch(e){return null;}};
   const lsSet=(k,v)=>{try{localStorage.setItem(k,v);return true;}catch(e){return false;}};
   const numKey=k=>{const n=Number(lsGet(k));return Number.isSafeInteger(n)&&n>=0?n:0;};
@@ -306,7 +323,8 @@
   function appendFallbackBackup(record) {
     const list=readFallbackBackups();
     list.unshift({...record,id:record.id||('fallback-'+Date.now()+'-'+Math.random().toString(36).slice(2,7))});
-    while(list.length>MAX_BACKUPS)list.pop();
+    const drop=new Set(backupsToDelete(list).map(r=>r.id));
+    for(let i=list.length-1;i>=0;i--)if(drop.has(list[i].id))list.splice(i,1);
     let serialized=JSON.stringify(list);
     while(list.length>1&&serialized.length>3*1024*1024){list.pop();serialized=JSON.stringify(list);}
     if(serialized.length>3*1024*1024)return false;
@@ -330,7 +348,7 @@
     let legacy=null;try{legacy=JSON.parse(lsGet(REPLACED_KEY)||'null');}catch(e){}
     if(legacy)fallback.push({id:'legacy-fallback',createdAt:Date.parse(legacy.at)||Date.now(),reason:legacy.reason,tasks:legacy.tasks,raw:legacy.raw});
     const seen=new Set(durable.map(item=>item.id));
-    return [...durable,...fallback.filter(item=>!seen.has(item.id))].sort((a,b)=>b.createdAt-a.createdAt).slice(0,MAX_BACKUPS);
+    return [...durable,...fallback.filter(item=>!seen.has(item.id))].sort((a,b)=>b.createdAt-a.createdAt).slice(0,MAX_BACKUPS+MAX_PROTECTED_BACKUPS);
   }
   async function saveRawBackup(raw,reason,parsedTasks=null) {
     const record={createdAt:Date.now(),reason,tasks:Array.isArray(parsedTasks)?parsedTasks:null,raw:String(raw)};
@@ -338,9 +356,7 @@
       const db=await openHandleDatabase();
       try {await new Promise((resolve,reject)=>{
         const tx=db.transaction(BACKUP_STORE,'readwrite'),store=tx.objectStore(BACKUP_STORE);
-        store.add(record);const keys=store.getAllKeys();keys.onsuccess=()=>{
-          const sorted=keys.result.sort((a,b)=>a-b);sorted.slice(0,Math.max(0,sorted.length-MAX_BACKUPS)).forEach(key=>store.delete(key));
-        };
+        store.add(record);trimBackups(store);
         tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error||new Error('تعذّر حفظ النسخة الخام'));tx.onabort=()=>reject(tx.error||new Error('تعذّر حفظ النسخة الخام'));
       });} finally {db.close();}
       backupCount=await countBackups();updateStorageStatus();return true;
@@ -361,10 +377,7 @@
         if(current.revision!==expectedRevision){conflict=true;result={ok:false,latest:current};tx.abort();return;}
         if(Array.isArray(beforeTasks)) {
           backupStore.add({createdAt:Date.now(),reason:reason||'تعديل',tasks:beforeTasks});
-          const keys=backupStore.getAllKeys();keys.onsuccess=()=>{
-            const sorted=keys.result.sort((a,b)=>a-b);
-            sorted.slice(0,Math.max(0,sorted.length-MAX_BACKUPS)).forEach(key=>backupStore.delete(key));
-          };
+          trimBackups(backupStore);
         }
         result={ok:true,record:{revision:current.revision+1,tasks:nextTasks,updatedAt:new Date().toISOString()}};
         stateStore.put(result.record,STATE_SLOT);
@@ -530,7 +543,7 @@
           if(choice===null){fileState='error';fileErrorSnapshot=raw;fileErr='تم إيقاف الحفظ لحماية النسخة الخارجية';return;}
           if(choice===true) {
             const adopted=await persist(incoming,tasks,'اعتماد ملف JSON',{recover:storageLoadFailed,skipFileWrite:true});
-            if(adopted){if(editingId&&!tasks.some(t=>t.id===editingId))resetEditor();render();fileErrorSnapshot=null;fileSnapshot=raw;fileRev=rev;lsSet(FILEREV_KEY,String(rev));fileState='ok';fileErr='';return;}
+            if(adopted){if(editingId&&!tasks.some(t=>t.id===editingId))resetEditor();render();fileErrorSnapshot=null;fileSnapshot=raw;rememberFileHash(raw);fileRev=rev;lsSet(FILEREV_KEY,String(rev));fileState='ok';fileErr='';return;}
             return;
           }
           fileErrorSnapshot=null;fileSnapshot=raw;
@@ -540,7 +553,7 @@
       const w=await fileHandle.createWritable();
       try {await w.write(payload);await w.close();}
       catch(e) {try{await w.abort();}catch(_){}throw e;}
-      fileErrorSnapshot=null;fileSnapshot=payload;fileRev=target;
+      fileErrorSnapshot=null;fileSnapshot=payload;rememberFileHash(payload);fileRev=target;
       lsSet(FILEREV_KEY,String(target));fileState='ok';fileErr='';
       if(rev>target)scheduleFileWrite();
     } catch(e) {
@@ -567,14 +580,29 @@
         return;
       }
       if(canon(incoming)===canon(tasks)) {
-        fileErrorSnapshot=null;fileSnapshot=raw;fileRev=rev;lsSet(FILEREV_KEY,String(rev));fileState='ok';fileErr='';return;
+        fileErrorSnapshot=null;fileSnapshot=raw;rememberFileHash(raw);fileRev=rev;lsSet(FILEREV_KEY,String(rev));fileState='ok';fileErr='';return;
+      }
+      if(mode!=='link'&&!storageLoadFailed&&lsGet(FILEHASH_KEY)!==null) {
+        const unchanged=lsGet(FILEHASH_KEY)===hashText(raw);
+        // Only our own newer edits are missing from the file (e.g. closed before the write finished): just write them.
+        if(unchanged&&rev>fileRev){fileSnapshot=raw;fileErrorSnapshot=null;await writeFile(true);return;}
+        // The file was edited elsewhere and nothing here is unsaved: take the file (a backup of the current data is kept).
+        if(!unchanged&&rev<=fileRev) {
+          fileSnapshot=raw;fileErrorSnapshot=null;
+          if(await persist(incoming,tasks,'اعتماد ملف JSON',{skipFileWrite:true})) {
+            if(editingId&&!tasks.some(t=>t.id===editingId))resetEditor();
+            render();rememberFileHash(raw);fileRev=rev;lsSet(FILEREV_KEY,String(rev));fileState='ok';fileErr='';
+            notify('تم تحديث المهام من ملف JSON المربوط');
+          }
+          return;
+        }
       }
       const useFile=storageLoadFailed?true:await askConflict(incoming,raw);
       if(useFile===null){fileState='error';fileErrorSnapshot=raw;fileErr='تم إيقاف المزامنة لحماية الملف الخارجي';return;}
       fileErrorSnapshot=null;fileSnapshot=raw;
       if(useFile) {
         const adopted=await persist(incoming,tasks,'اعتماد ملف JSON',{recover:storageLoadFailed,skipFileWrite:true});
-        if(adopted){if(editingId&&!tasks.some(t=>t.id===editingId))resetEditor();render();fileErrorSnapshot=null;fileRev=rev;lsSet(FILEREV_KEY,String(rev));fileState='ok';fileErr='';}
+        if(adopted){if(editingId&&!tasks.some(t=>t.id===editingId))resetEditor();render();fileErrorSnapshot=null;rememberFileHash(raw);fileRev=rev;lsSet(FILEREV_KEY,String(rev));fileState='ok';fileErr='';}
       } else await writeFile(true);
     } catch(e) {
       fileState='error';fileErr=(e&&e.message)||'تعذّرت قراءة الملف';
@@ -674,12 +702,16 @@
       heading.style.margin='0 0 8px';
       heading.style.fontSize='18px';
       heading.style.color='var(--ink)';
-      const note=element('p','dialog-text','اختر ملف JSON موجودًا، أو أنشئ ملفًا جديدًا. بعد الربط سيحفظ البرنامج تعديلات هذه الجلسة فيه تلقائيًا.');
+      const linked=fileHandle?fileName():null;
+      const note=element('p','dialog-text',linked
+        ?'الملف المربوط حاليًا: «'+linked+'». اختر ملفًا آخر، أو أنشئ ملفًا جديدًا، أو افصل الربط (بياناتك تفضل محفوظة في المتصفح).'
+        :'اختر ملف JSON موجودًا، أو أنشئ ملفًا جديدًا. بعد الربط سيحفظ البرنامج تعديلاتك فيه تلقائيًا.');
       const actions=element('div','dialog-actions');
       const existing=makeButton('اختيار ملف موجود','btn primary',()=>finish(false));
       const create=makeButton('إنشاء ملف جديد','btn',()=>finish(true));
+      const unlink=linked?makeButton('فصل الربط','btn',()=>finish('unlink')):null;
       const cancel=makeButton('إلغاء','btn',()=>finish(null));
-      actions.append(existing,create,cancel);
+      actions.append(existing,create);if(unlink)actions.append(unlink);actions.append(cancel);
       box.append(heading,note,actions);
       overlay.append(box);
       function finish(value) {
@@ -691,7 +723,7 @@
       function onKey(event) {
         if(event.key==='Escape'){event.preventDefault();finish(null);}
         if(event.key==='Tab') {
-          const buttons=[existing,create,cancel],index=buttons.indexOf(document.activeElement);
+          const buttons=[...actions.querySelectorAll('button')],index=buttons.indexOf(document.activeElement);
           event.preventDefault();
           buttons[(index+(event.shiftKey?-1:1)+buttons.length)%buttons.length].focus();
         }
@@ -703,8 +735,9 @@
     });
   }
   async function connectSaveFile() {
-    const create=await chooseSaveFileMode();
-    if(create!==null)await linkFile(create);
+    const choice=await chooseSaveFileMode();
+    if(choice==='unlink')await unlinkFile();
+    else if(choice!==null)await linkFile(choice);
   }
   async function linkFile(create) {
     if(!supportsFile||busy||!dataReady)return;busy=true;
@@ -731,7 +764,7 @@
     const overlay=element('div','dialog-backdrop'),box=element('div','dialog-box backup-dialog');
     box.setAttribute('role','dialog');box.setAttribute('aria-modal','true');
     const heading=element('h3','','النسخ الاحتياطية');
-    const note=element('p','dialog-text','يحتفظ البرنامج بآخر 10 نسخ قبل التعديلات والاستيراد والحذف والاستعادة، حسب مساحة التخزين المتاحة.');
+    const note=element('p','dialog-text','يحتفظ البرنامج بآخر 10 نسخ للإضافة والتعديل، وآخر 10 نسخ محمية قبل الحذف والاستيراد وإعادة الضبط والاستعادة، حسب مساحة التخزين المتاحة.');
     const list=element('div','backup-list');
     if(!backups.length)list.append(element('div','backup-empty','لا توجد نسخ احتياطية حتى الآن.'));
     backups.forEach(record=>{
@@ -1400,6 +1433,7 @@
     exportedSinceRisk=true;notify('تم تجهيز نسخة JSON للتنزيل');
   });
   $('linkDataFileBtn').addEventListener('click',connectSaveFile);
+  $('backupsBtn').addEventListener('click',showBackupsDialog);
   $('importBtn').addEventListener('click',()=>$('importFile').click());
   $('importFile').addEventListener('change',async event=>{
     const file=event.target.files?.[0];if(!file)return;
@@ -1445,7 +1479,7 @@
   window.addEventListener('pagehide',()=>{if(stateChannel)stateChannel.close();});
   window.addEventListener('beforeunload',e=>{
     const safeInFile=fileHandle&&fileState==='ok'&&rev<=fileRev;
-    const unsafe=!!storageErr||(atRisk&&!exportedSinceRisk&&!safeInFile)||(fileHandle&&(fileState==='saving'||(rev>fileRev&&fileState!=='ok')));
+    const unsafe=!!storageErr||(atRisk&&!exportedSinceRisk&&!safeInFile);
     if(unsafe){e.preventDefault();e.returnValue='';}
   });
   async function offerUnreadable() {

@@ -1,12 +1,12 @@
 # مخطط وقتي | Weekly Time Planner
 
-**Baseline:** v3.8  
+**Baseline:** v3.9  
 **نوع المشروع:** Static Web App + PWA shell  
 **اللغة:** العربية (RTL)
 
 ## ما الذي يحتويه هذا المستودع؟
 
-هذا المستودع هو نقطة البداية الرسمية لنشر النسخة المستقرة v3.8 على GitHub Pages، مع تجهيز هيكل منظم للتطوير المستقبلي.
+هذا المستودع هو نقطة البداية الرسمية لنشر النسخة المستقرة v3.9 على GitHub Pages، مع تجهيز هيكل منظم للتطوير المستقبلي.
 
 - `index.html`: نقطة دخول GitHub Pages.
 - `src/css/app.css`: تنسيقات الواجهة المستخرجة من النسخة المستقرة.
@@ -81,7 +81,13 @@ git commit -m "feat: describe the change"
 git push
 ```
 
-عند إصدار نسخة جديدة، حدّث رقم Cache في `service-worker.js` حتى يحصل المستخدمون على ملفات التطبيق الجديدة.
+عند إصدار نسخة جديدة:
+
+1. غيّر `VERSION` في `service-worker.js`، وغيّر `?v=` في روابط CSS/JS داخل `index.html` إلى نفس الرقم.
+2. أضف قسمًا جديدًا في أعلى `CHANGELOG.md`، وحدّث `Baseline` في هذا الملف ونص الإصدار في الـfooter.
+3. شغّل `node tests/check-release.js` — يفشل لو الأرقام غير متطابقة أو وُجد ملف JSON شخصي داخل `data/` أو `backups/`.
+
+اسم الفرع في هذا المستودع `Main` (بحرف كبير)؛ اختره بنفس الشكل في **Settings → Pages**.
 
 راجع:
 - `docs/architecture.md`

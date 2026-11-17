@@ -42,3 +42,13 @@ The application started as a single-file v3.6 baseline. This checklist records t
 - [ ] Confirm all seven days remain vertically stacked in timeline view.
 - [ ] Confirm data menu has exactly four actions: Import, Export, Link Save File, Reset Tasks.
 - [ ] Confirm Link Save File offers choosing an existing JSON file or creating a new one.
+
+## v3.9 sync, backups and updates
+- [ ] After a deploy, one normal reload shows the new version (no console errors about missing elements).
+- [ ] Link Save File → Unlink works, and the data stays in the browser.
+- [ ] Edit while the file needs permission, close, reopen, click the save chip: edits are written without a "which copy?" question.
+- [ ] Edit the JSON file outside the app, reopen: the app takes the file silently (backup kept). Edit both: the conflict dialog appears.
+- [ ] Backups dialog opens from the data menu; restore works; after 10+ routine edits a pre-reset snapshot is still listed.
+- [ ] Closing the tab with the file waiting for permission does NOT show a "leave site?" prompt.
+- [ ] Mobile: the data menu opens right under the header at any header height.
+- [ ] Offline after one online visit: page loads from the cache.

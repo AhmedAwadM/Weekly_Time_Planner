@@ -8,7 +8,7 @@
   if (!secureOrigin || !("serviceWorker" in navigator)) return;
 
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./service-worker.js", { scope: "./" })
+    navigator.serviceWorker.register("./service-worker.js", { scope: "./", updateViaCache: "none" })
       .then((registration) => {
         console.info("[Weekly Planner] Offline support is registered.", registration.scope);
       })

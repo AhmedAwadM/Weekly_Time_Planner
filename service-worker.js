@@ -1,13 +1,14 @@
 /* Weekly Time Planner PWA service worker.
-   Bump CACHE_VERSION whenever a release changes app files. */
-const CACHE_VERSION = "weekly-time-planner-v3.8.0";
+   Release rule: bump VERSION here AND the ?v= query on the CSS/JS links in index.html (npm-free check: node tests/check-release.js). */
+const VERSION = "3.9.0";
+const CACHE_VERSION = "weekly-time-planner-v" + VERSION;
 const APP_SHELL = [
   "./",
   "./index.html",
   "./manifest.webmanifest",
-  "./src/css/app.css",
-  "./src/js/app.js",
-  "./src/js/pwa-register.js",
+  "./src/css/app.css?v=" + VERSION,
+  "./src/js/app.js?v=" + VERSION,
+  "./src/js/pwa-register.js?v=" + VERSION,
   "./assets/icons/app-icon-192.png",
   "./assets/icons/app-icon-512.png",
   "./assets/icons/app-icon-maskable-512.png"
@@ -34,6 +35,8 @@ self.addEventListener("activate", (event) => {
   })());
 });
 
+// Network-first: online visits always get a consistent, fresh set of files (HTML + CSS + JS from the same
+// release). The cache is only the offline fallback, so a stale script can never run against a new page.
 self.addEventListener("fetch", (event) => {
   const request = event.request;
   if (request.method !== "GET") return;
@@ -42,39 +45,25 @@ self.addEventListener("fetch", (event) => {
   if (requestUrl.origin !== self.location.origin) return;
   if (!requestUrl.href.startsWith(self.registration.scope)) return;
 
-  if (request.mode === "navigate") {
-    event.respondWith((async () => {
-      try {
-        const response = await fetch(request);
-        if (response && response.ok) {
-          const cache = await caches.open(CACHE_VERSION);
-          await cache.put(request, response.clone());
-        }
-        return response;
-      } catch {
-        return (await caches.match(request)) ||
-          (await caches.match(new URL("./index.html", self.registration.scope)));
-      }
-    })());
-    return;
-  }
-
-  const refreshPromise = fetch(request).then(async (response) => {
-    if (response && response.ok && response.type === "basic") {
-      const cache = await caches.open(CACHE_VERSION);
-      await cache.put(request, response.clone());
-    }
-    return response;
-  }).catch(() => null);
-
-  // Extend the fetch event synchronously while cached assets are returned immediately.
-  event.waitUntil(refreshPromise.then(() => undefined));
   event.respondWith((async () => {
-    const cached = await caches.match(request);
-    if (cached) return cached;
-    return (await refreshPromise) || new Response("Offline: resource not cached.", {
-      status: 503,
-      headers: { "Content-Type": "text/plain; charset=utf-8" }
-    });
+    try {
+      const response = await fetch(request, { cache: "no-cache" });
+      if (response && response.ok && response.type === "basic") {
+        const copy = response.clone();
+        event.waitUntil(caches.open(CACHE_VERSION).then((cache) => cache.put(request, copy)));
+      }
+      return response;
+    } catch (error) {
+      const cached = await caches.match(request);
+      if (cached) return cached;
+      if (request.mode === "navigate") {
+        const shell = await caches.match(new URL("./index.html", self.registration.scope));
+        if (shell) return shell;
+      }
+      return new Response("Offline: resource not cached.", {
+        status: 503,
+        headers: { "Content-Type": "text/plain; charset=utf-8" }
+      });
+    }
   })());
 });

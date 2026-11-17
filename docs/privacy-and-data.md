@@ -29,3 +29,8 @@ Before enabling cloud storage:
 4. Enable RLS and write policies that restrict reads/writes to the authenticated owner.
 5. Test with two separate accounts to prove that one user cannot read or modify another user's records.
 6. Keep service-role credentials on a trusted server only; never in the browser.
+
+## Git hygiene
+
+- Never commit data to any branch, even a local-only one: `.gitignore` does not protect files added with `git add -f`, and one `git push --all` publishes every local branch.
+- Keep backups outside the repository folder. Use your GitHub `noreply` e-mail for commits (`git config user.email`), because commit e-mails are public.
